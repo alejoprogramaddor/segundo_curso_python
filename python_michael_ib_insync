@@ -1,0 +1,249 @@
+from ib_insync import *
+util.startLoop()
+
+import pandas as pd
+from datetime import datetime
+import datetime
+import numpy as numpy
+import numpy as np
+import schedule
+import os
+from statistics import mean
+from statistics import stdev
+from math import isnan
+from itertools import filterfalse
+
+
+#import schedule
+#import time
+#import pytz
+from random import randint
+#import asyncio
+import math
+
+#from IPython.display import display, HTML
+# this is requesting the live data/ prices
+# the ib.sleep is to give it time to start updating
+
+ib = IB()
+ib.connect('127.0.0.1', 7497, clientId=randint(0, 10000))
+
+contract = Future('ES', '202406', 'CME')
+contract1 = Future('NQ', '202406', 'CME')
+ib.qualifyContracts(contract)
+ib.qualifyContracts(contract1)
+ib.reqMarketDataType(1)
+
+ib.sleep(5)
+
+ticker = ib.reqTickByTickData(contract, "Last", 0, False)
+ticker1 = ib.reqTickByTickData(contract1, "Last", 0, False)
+
+ib.sleep(1)
+# i changed last to close
+TT = ticker.last
+TT1 = ticker1.last
+
+ratio = (TT1/TT) * 0.6666666
+#average = ratio.rolling(3).mean()
+#fIBONACCI NBRS these are the numbers for the barrier levels
+fib1 = 0.6666666
+bb1 = 0.618
+bb2 = -0.618
+
+
+# Here I am trying to set the time parameters to show when to trade and run the code
+time1 = datetime.datetime.now()
+hour = time1.hour
+minute = time1.minute
+second = time1.second
+
+def time2():
+    time1 = datetime.datetime.now()
+    hour = time1.hour
+    minute = time1.minute
+    second = time1.second
+    return time1,hour, minute, second
+
+ib.sleep(.05)
+
+# this the dictionary to setup the df3        
+
+"""dict = {'es' :[TT],
+        'nq' :[TT1],
+        'ratio' :[(TT1/TT) * fib1],
+        'average1' : [1],
+        'stdev1' : [1],
+        }"""
+# Define df3 with four columns
+df3 = pd.DataFrame(columns=['es', 'nq', 'ratio', 'average1', 'stdev1'])
+
+# ...
+
+
+# this how to add the new data to df3 and defining df4
+#df3.loc[len(df3.index)] = [TT, TT1, ratio, average1, stdev1, zz]
+
+"""es1 = df3["es"].iloc[-1:]
+nq1 = df3["nq"].iloc[-1:]
+ratio = (nq1/es1) * fib1
+#average = ratio.rolling(3).mean()
+df4 = pd.DataFrame([])
+
+df4["ratio"] = ( df3["es"] / df3["nq"] ) * fib1
+df4["avg"] = df4["ratio"].rolling(3).mean()
+df4["std"] = df4["ratio"].rolling(7).std(ddof=1)
+df4["zz"] = (df4["ratio"] - df4["avg"]) / df4["std"]
+df4.fillna(22,inplace=True)
+dict1 ={'ratio1' : [ratio]}
+df5 = pd.DataFrame(dict1)
+df5.loc[len(df5.index)]  = [ratio]
+ratio = float()
+es1 = float()
+nq1 = float()"""
+
+#def stats():
+#    df4["ratio"] = ( df3["es"].iloc[-1] / df3["nq"].iloc[-1] ) * fib1
+ #   df4["avg"] = df4["ratio"].rolling(3).mean()
+  #  df4["std"] = df4["ratio"].rolling(7).std(ddof=1)
+ #   df4["zz"] = (df4["ratio"] - df4["avg"]) / df4["std"]
+  #  return df4["ratio"], df4["avg"], df4["std"], df4["zz"]
+
+
+    
+#     df4.fillna(22,inplace=True)
+
+
+#this solving for what position to have
+
+# if df4["zz"].iloc[-1] > bb1:
+#     possy = -1
+# elif df4["zz"].iloc[-1] < bb2:
+#     possy = 1
+# else:
+#     possy = 0   
+
+# df4["position"] = possy
+
+# this is where i am working out how many contracts to buy or sell 
+
+pos = ib.positions()
+poses = next((v.position for v in ib.positions() if v.contract.localSymbol =='ESH4'), 0)
+posnq = next((v.position for v in ib.positions() if v.contract.localSymbol =='NQH4'), 0)
+nqsell = abs(-2 - posnq)
+nqbuy = abs( 2 - posnq )
+essell =abs( -3 - poses )
+esbuy = abs( 3 - poses )
+# Cancelall = ib.reqGlobalCancel()
+position = float()
+rest = ib.sleep(0.5)
+rest1 = ib.sleep(0.1)
+rest2 = ib.sleep(0.1)
+
+while  hour <= 12 and minute <=30:
+    # print (" ES PRICE " , last)
+    # print("NQ PRICE" , last1)
+    ib.sleep(10)
+    hour = datetime.datetime.now().hour
+    minute = datetime.datetime.now().minute
+    ticker = ib.reqTickByTickData(contract, "Last", 0, False)
+    ticker1 = ib.reqTickByTickData(contract1, "Last", 0, False)
+    TT = ticker.last
+    TT1 = ticker1.last
+    ratio = (TT1/TT) * 0.6666666
+    average1 = (ratio).rolling(3).mean()
+    stdev1 = (ratio).rolling(3).std()
+    #zz = (ratio - average1) / stdev1
+    
+    
+    
+    # Calcula el promedio y la desviación estándar si hay suficientes datos en df3
+    if len(df3) > 3:
+        average1
+        stdev1 
+    else:
+        average1 = np.nan
+        stdev1 = np.nan
+
+    # Add a row with four elements
+    df3.loc[len(df3)] = [TT, TT1, ratio, average1, stdev1]
+
+    df4 = pd.DataFrame([])
+    df4 = pd.DataFrame(columns=['ratio', 'AVG', 'STD'])
+
+    if len(df4) > 3:
+        AVG = df4["ratio"].rolling(3).mean().iloc[-1]
+        STD = df4["ratio"].rolling(3).std().iloc[-1]
+    else:
+        AVG = 123
+        STD = 123
+
+    df4.loc[len(df4)] = [ratio, AVG, STD]
+
+    df4['AVG'] =df4["ratio"].rolling(3).mean().iloc[-1] 
+    df4['STD'] = df4["ratio"].rolling(3).std().iloc[-1]
+
+
+
+    
+        
+    #df3.round({'es', 2, 'nq', 2})
+
+    pd.set_option('display.float_format', '{:.7f}'.format) #  haca le informamos cuantos decimales queremos
+
+
+    #df3.fillna(22, inplace=True)
+    #df3["avg"] = df3["ratio"].rolling(3).mean()
+    #es1 = df3["es"].iloc[-1]
+    #nq1 = df3["nq"].iloc[-1]
+    #ratio = (nq1)/(es1) * fib1
+    #df3['timeX'] = datetime.datetime.now()
+    #df5.loc[len(df5.index)]  = [ratio]
+    #df5["average"] = df5["ratio1"].rolling(3).mean()
+    #df5["std"] = df5["ratio1"].rolling(7).std(ddof=1)
+    #df5["zz"] = (df5["ratio1"] - df5["average"]) / df5["std"]
+       
+    #df3.fillna(22, inplace=True)
+    print(TT)
+    print(TT1)
+    
+    #print(ratio)
+    print(datetime.datetime.now())
+    print(df3)
+    print(df4)
+
+
+
+ib.disconnect  
+
+#ib.run()
+
+#print(ticker)
+#print(ticker1)
+#print(TT)
+#print(TT1)
+# print(last1)
+# print(TT)
+# print(TT1)
+# #display(HTML(df55. to_html()))
+# print(pos)
+# print("ES" , poses)
+# print ("esbuy" , esbuy)
+# print("essell" , essell)
+# print("NQ" , posnq)
+# print(" nqsell" , nqsell)
+# print("nqbuy" , nqbuy)
+# #print(df2)
+# print(time1)
+# print(" hour is" , hour)
+# print(minute)
+# print(active)
+#print(df3)
+#print(df4)
+#print("minutes in the hour", minute)
+# print(df4)
+# print(type(hour))
+#print(time1)
+print(df3)
+print(df4)
+#print(df5)
