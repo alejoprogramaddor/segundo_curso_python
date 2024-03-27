@@ -1,0 +1,159 @@
+from ib_insync import *
+util.startLoop()
+
+import pandas as pd
+from datetime import datetime
+import datetime
+import numpy as numpy
+import numpy as np
+import schedule
+import os
+from statistics import mean
+from statistics import stdev
+from math import isnan
+from itertools import filterfalse
+from IPython.display import display
+
+
+#import schedule
+#import time
+#import pytz
+from random import randint
+#import asyncio
+import math
+
+#from IPython.display import display, HTML
+# this is requesting the live data/ prices
+# the ib.sleep is to give it time to start updating
+
+ib = IB()
+ib.connect('127.0.0.1', 7497, clientId=randint(0, 10000))
+
+contract = Future('ES', '20240621', 'CME')
+contract1 = Future('NQ', '20240621', 'CME')
+ib.qualifyContracts(contract)
+ib.qualifyContracts(contract1)
+ib.reqMarketDataType(1)
+
+ib.sleep(5)
+
+ticker = ib.reqTickByTickData(contract, "Last", 0, False)
+ticker1 = ib.reqTickByTickData(contract1, "Last", 0, False)
+
+ib.sleep(1)
+
+# i changed last to close
+TT = ticker.last
+TT1 = ticker1.last
+ratio = (TT1/TT) * 0.6666666
+average1 = 1
+
+
+
+
+#fIBONACCI NBRS these are the numbers for the barrier levels
+fib1 = 0.6666666
+bb1 = 0.618
+bb2 = -0.618
+
+print(ticker)
+print(ticker1)
+       
+
+df3 = pd.DataFrame(columns=['es', 'nq', 'ratio', 'average1'])
+
+time1 = datetime.datetime.now()
+hour = datetime.datetime.now().hour
+minute = datetime.datetime.now().minute
+
+while  hour <= 12 and minute <=5:
+    ib.sleep(10)
+    hour = datetime.datetime.now().hour
+    minute = datetime.datetime.now().minute
+    ticker = ib.reqTickByTickData(contract, "Last", 0, False)
+    ticker1 = ib.reqTickByTickData(contract1, "Last", 0, False)
+    TT = ticker.last
+    TT1 = ticker1.last
+    ratio = (TT1/TT) * 0.6666666
+    average1 = df3["ratio"].rolling(3).mean()
+    # df3['avg'] = df3['ratio'].rolling(3, min_periods=3).mean()
+
+
+    # Add a row with four elements
+#df3.loc[len(df3)] = [TT, TT1, ratio, average1]
+    
+
+    '''if len(df3) >= 3:
+         average1 = df3["ratio"].rolling(3).mean().iloc[-1]
+         stdev1 = df3["ratio"].rolling(3).std().iloc[-1]
+        else:
+        average1 = np.nan
+        stdev1 = np.nan'''
+    
+
+    df3.loc[len(df3)] = [TT, TT1, ratio, average1]
+    '''if len(df3) <= 3:
+        df3['average1'] = np.nan
+        df3['stdev1'] = np.nan
+    else:
+        df3['average1'] = df3["ratio"].rolling(3).mean()
+        df3['stdev1'] = df3["ratio"].rolling(3).std(ddof=1)'''
+
+    pd.set_option('display.float_format', '{:.7f}'.format) #  haca le informamos cuantos decimales queremos
+   
+    #df3.fillna(22, inplace=True)
+    print(TT)
+    print(TT1)
+    print(ratio)
+    print(datetime.datetime.now())
+    #print(len(df3) )  
+    #print(df3.index[-1]) 
+    #print(average1)  
+    #print(df3)
+
+
+df3['average2'] = df3["ratio"].rolling(3).mean()    
+df3['stdev2'] = df3["ratio"].rolling(3).std(ddof=1)
+df3['zz2'] = (df3['ratio'] - df3['average2']) / df3['stdev2']
+
+ib.disconnect  
+
+#df3.set_option('display.max_columns', None)  
+#ib.run()
+print(df3)
+
+display(df3)
+
+
+'''dict = {'es' :[TT],
+        'nq' :[TT1],
+        'ratio' :[(TT1/TT) * fib1]
+        }
+# Define df3 with four columns
+df3 =pd.DataFrame(dict)'''
+
+# this how to add the new data to df3 and defining df4
+#df3.loc[len(df3.index)] = [TT, TT1, ratio, average1, stdev1, zz]
+
+#this solving for what position to have
+
+# if df4["zz"].iloc[-1] > bb1:
+#     possy = -1
+# elif df4["zz"].iloc[-1] < bb2:
+#     possy = 1
+# else:
+#     possy = 0   
+
+# df4["position"] = possy
+
+# this is where i am working out how many contracts to buy or sell 
+
+#pos = ib.positions()
+#poses = next((v.position for v in ib.positions() if v.contract.localSymbol =='ESH4'), 0)
+#posnq = next((v.position for v in ib.positions() if v.contract.localSymbol =='NQH4'), 0)
+#nqsell = abs(-2 - posnq)
+#nqbuy = abs( 2 - posnq )
+#essell =abs( -3 - poses )
+#esbuy = abs( 3 - poses )
+# Cancelall = ib.reqGlobalCancel()
+#position = float()
