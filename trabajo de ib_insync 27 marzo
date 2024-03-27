@@ -1,3 +1,4 @@
+
 from ib_insync import *
 util.startLoop()
 
@@ -66,7 +67,7 @@ time1 = datetime.datetime.now()
 hour = datetime.datetime.now().hour
 minute = datetime.datetime.now().minute
 
-while  hour <= 12 and minute <=5:
+while  hour <= 13 and minute <= 20:
     ib.sleep(10)
     hour = datetime.datetime.now().hour
     minute = datetime.datetime.now().minute
@@ -76,7 +77,8 @@ while  hour <= 12 and minute <=5:
     TT1 = ticker1.last
     ratio = (TT1/TT) * 0.6666666
     average1 = df3["ratio"].rolling(3).mean()
-    # df3['avg'] = df3['ratio'].rolling(3, min_periods=3).mean()
+
+    # df3['avg'] = df3['ratio'].rolling(3, min_periods=3).mean()/
 
 
     # Add a row with four elements
@@ -92,6 +94,12 @@ while  hour <= 12 and minute <=5:
     
 
     df3.loc[len(df3)] = [TT, TT1, ratio, average1]
+
+    if len(df3) >= 3:
+      stdev1 = df3["ratio"].rolling(3).std(ddof=1).iloc[-1]
+    else:
+      stdev1 = np.nan
+
     '''if len(df3) <= 3:
         df3['average1'] = np.nan
         df3['stdev1'] = np.nan
@@ -99,12 +107,13 @@ while  hour <= 12 and minute <=5:
         df3['average1'] = df3["ratio"].rolling(3).mean()
         df3['stdev1'] = df3["ratio"].rolling(3).std(ddof=1)'''
 
-    pd.set_option('display.float_format', '{:.7f}'.format) #  haca le informamos cuantos decimales queremos
+    pd.set_option('display.float_format', '{:.12f}'.format) #  haca le informamos cuantos decimales queremos
    
     #df3.fillna(22, inplace=True)
     print(TT)
     print(TT1)
     print(ratio)
+    print(stdev1)
     print(datetime.datetime.now())
     #print(len(df3) )  
     #print(df3.index[-1]) 
@@ -157,3 +166,4 @@ df3 =pd.DataFrame(dict)'''
 #esbuy = abs( 3 - poses )
 # Cancelall = ib.reqGlobalCancel()
 #position = float()
+
