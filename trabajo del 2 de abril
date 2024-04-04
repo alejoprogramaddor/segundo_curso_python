@@ -1,0 +1,134 @@
+from ib_insync import *
+util.startLoop()
+
+import pandas as pd
+from datetime import datetime
+import datetime
+import numpy as numpy
+import numpy as np
+import schedule
+import os
+from statistics import mean
+from statistics import stdev
+from math import isnan
+from itertools import filterfalse
+from IPython.display import display
+from random import randint
+import math
+
+
+ib = IB()
+ib.connect('127.0.0.1', 7497, clientId=randint(0, 10000))
+
+contract = Future('ES', '20240621', 'CME')
+contract1 = Future('NQ', '20240621', 'CME')
+ib.sleep(5)
+#print(contract)
+#print(contract1)
+
+ib.qualifyContracts(contract)
+ib.qualifyContracts(contract1)
+ib.reqMarketDataType(1)
+ib.sleep(10)
+
+ticker = ib.reqTickByTickData(contract, 'Last', 0, False)
+ticker1 = ib.reqTickByTickData(contract1, 'Last', 0, False)
+
+ib.sleep(2)
+
+
+# i changed last to close
+TT = ticker.last
+TT1 = ticker1.last
+ratio = (TT1/TT) * 0.6666666
+
+#fIBONACCI NBRS these are the numbers for the barrier levels
+fib1 = 0.6666666
+bb1 = 0.618
+bb2 = -0.618
+
+print(ticker)
+print(ticker1)
+       
+# se crea los nombres de las columnas para el dataframe
+df3 = pd.DataFrame(columns=['es', 'nq', 'ratio'])
+df4 = pd.DataFrame(columns=['average1', 'stdev1', 'zz'])
+df5 = pd.DataFrame(columns=['Position'])
+
+
+list = [1 ,2 ,3 ]
+df4.loc[len(df4)] = list
+list1 = [4, 5, 6]
+df4.loc[len(df4)] = list1
+
+
+
+#se ponen las estadisticas de las diferentes columnas para que se puedan hacer los calculos despues del dataframe 
+
+
+time1 = datetime.datetime.now()
+hour = datetime.datetime.now().hour
+minute = datetime.datetime.now().minute
+
+while  hour <= 1 and minute <= 54:
+    ib.sleep(5)
+    hour = datetime.datetime.now().hour
+    minute = datetime.datetime.now().minute
+    ticker = ib.reqTickByTickData(contract, "Last", 0, False)
+    ticker1 = ib.reqTickByTickData(contract1, "Last", 0, False)
+    TT = ticker.last
+    TT1 = ticker1.last
+    ratio = (TT1/TT) * 0.6666666
+  # Position = 1
+    #position1 = df6['zz'] > bb1 = -1 or df6['zz'] < bb2 = 1 or 0 
+
+    df3.loc[len(df3)] = [TT, TT1, ratio]  # es para agregar una nuevas filas que se llaman average, stedv1 y zz al dataframe 4 colocandolo en la ultima fila
+   #df5.loc[len(df5)] = [Position]
+
+    if len(df3) >= 3:
+      average1 = df3["ratio"].rolling(3).mean().iloc[-1]
+      stdev1 = df3["ratio"].rolling(3).std(ddof=1).iloc[-1]
+      zz = (df3['ratio'].iloc[-1] - average1) / stdev1
+      
+      
+      df4.loc[len(df4)] = [average1, stdev1, zz]  # es para agregar una nuevas filas que se llaman average, stedv1 y zz al dataframe 4 colocandolo en la ultima fila 
+      df5.loc[len(df5)] = [Position]              # es para agregar una nuevas filas que se llaman position al dataframe 5 colocandolo en la ultima fila
+      df6 = pd.concat([df3, df4 ,df5 ], axis=1)   # ES PARA agragar otro dataframe por eso es concat y se utiliza axis 1 para especificar que es una columna 
+
+
+
+      Position = np.select([(df6['zz'] > bb1).any(), (df6['zz'] < bb2).any()], [-1, 1], default=0)
+     # Position = np.select([df6['zz'] > bb1,-1, df6['zz'] < bb1], [-1, 1], default=0)
+     # Position = np.where(df6['zz'] > bb1, -1, np.where(df6['zz'] < bb1, 1, 0))
+
+      '''if (df5['zz'] > bb1).any():
+        Position = -1
+      elif (df5['zz'] < bb2).any():
+        Position = 1
+      else: 
+        Position = 0'''
+
+#este codigo es para que el programa sepa que numero es 
+    
+    else:
+      stdev1 = np.nan
+      average1 = np.nan
+      zz = np.nan
+      Position = np.nan
+
+    pd.set_option('display.float_format', '{:.12f}'.format) #  haca le informamos cuantos decimales queremos
+
+   
+    print(f" HORA ACTUAL = {datetime.datetime.now()}")
+    print(f"ES = {TT}")
+    print(f"NQ = {TT1}")
+    print(f" RATIO = {ratio}")
+    print(f" STDEV = {stdev1}")
+    print(f" AVERAGE = {average1}")
+    print(f" ZZ = {zz}")
+    print(f" POSITION = {Position}")
+
+ib.disconnect  
+
+print(display(df6))
+#print(display(df4))
