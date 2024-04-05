@@ -298,3 +298,31 @@ solucionarlo
 como tarea es utilizar schedule que se ejecute cada minuto cuando el segundo este en 00 
 tambien que cree un dataframe que vaya desde las 5 pm hasta las 8 am 
 
+
+import time
+import schedule
+from datetime import datetime
+
+ejecutado = False
+
+def job():
+    global ejecutado
+    if not ejecutado:
+      print(datetime.now())
+      print(" si dio el codigo cada minuto..... ")
+      ejecutado = True
+
+def segundo1():
+    global ejecutado      # se trae la variable que esta fuera de la funcion 
+    now = datetime.now()
+    if now.second == 0:    
+        ejecutado = False  #reinicia la variable de estado 
+        job()
+
+
+
+schedule.every().seconds.do(segundo1)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
