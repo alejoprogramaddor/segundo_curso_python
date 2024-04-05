@@ -1,0 +1,219 @@
+from ib_insync import *
+util.startLoop()
+
+import pandas as pd
+from datetime import datetime
+import numpy as numpy
+import numpy as np
+import schedule
+import os
+from statistics import mean
+from statistics import stdev
+from math import isnan
+from itertools import filterfalse
+from IPython.display import display
+#import time 
+from random import randint
+import time
+
+ib = IB()
+ib.connect('127.0.0.1', 7497, clientId=randint(0, 10000))
+
+contract = Future('ES', '20240621', 'CME')
+contract1 = Future('NQ', '20240621', 'CME')
+ib.qualifyContracts(contract)
+ib.qualifyContracts(contract1)
+ib.reqMarketDataType(1)
+
+ib.sleep(5)
+
+ticker = ib.reqTickByTickData(contract, "Last", 0, False)
+ticker1 = ib.reqTickByTickData(contract1, "Last", 0, False)
+
+ib.sleep(1)
+
+TT = ticker.last
+TT1 = ticker1.last
+ratio = (TT1/TT) * 0.6666666
+
+df3 = pd.DataFrame(columns=['es', 'nq', 'ratio'])
+df4 = pd.DataFrame(columns=['average1', 'stdev1', 'zz'])
+df5 = pd.DataFrame(columns=['Position'])
+
+
+list = [1, 2, 3]
+df4.loc[len(df4)] = list
+list1 = [4, 5, 6]
+df4.loc[len(df4)] = list1
+
+
+#average1 =  df4["ratio"].rolling(3).mean() 
+#stdev1 = df4["ratio"].rolling(3).std(ddof=1)
+#zz = (df4['ratio'] - df4['average1']) / df4['stdev1']
+
+
+#fIBONACCI NBRS these are the numbers for the barrier levels
+fib1 = 0.6666666
+bb1 = 0.218
+bb2 = -0.218
+
+print(ticker)
+print(ticker1)
+
+#se ponen las estadisticas de las diferentes columnas para que se puedan hacer los calculos despues del dataframe 
+
+#average1 = df3["ratio"].rolling(3).mean()
+#stdev1 = df3["ratio"].rolling(3).std(ddof=1)
+#zz = (df3['ratio'] - df3['average1']) / df3['stdev1']
+
+
+##############################################################################################
+
+now = datetime.now()
+hour = datetime.now().hour
+minute = datetime.now().minute
+
+ejecutado = False      #esto es para que no se ejecute el codigo cada segundo, sino cada minuto
+
+Position = 1
+
+def job():
+    global ejecutado
+    if not ejecutado:
+      ejecutado = False
+      global contract
+      global contract1
+      ib.qualifyContracts(contract)
+      ib.qualifyContracts(contract1)
+      ib.reqMarketDataType(1)
+
+      global ticker
+      global ticker1
+
+      global TT
+      global TT1
+
+      global ratio
+      global average1
+      global stdev1
+      global zz
+
+      global fib1
+      global bb1
+      global bb2
+
+      global df3
+      global df4
+      global df5
+
+      global now
+      global hour
+      global minute
+      global util
+      global randint
+
+      global Position
+
+  
+
+      hour = datetime.now().hour
+      minute = datetime.now().minute
+      ticker = ib.reqTickByTickData(contract, "Last", 0, False)
+      ticker1 = ib.reqTickByTickData(contract1, "Last", 0, False)
+      TT = ticker.last
+      TT1 = ticker1.last
+      ratio = (TT1/TT) * 0.6666666
+      Position = 1
+      
+      df3.loc[len(df3)] = [TT, TT1, ratio]
+
+      #average1 = df3["ratio"].rolling(3).mean()   
+      #stdev1 = df3["ratio"].rolling(3).std(ddof=1)
+      #zz = (df3['ratio'] - df4['average1']) / df4['stdev1']
+
+      #df3.loc[len(df3)] = [TT, TT1, ratio, average1, stdev1, zz]
+      #df4 = df3.iloc[-1] = [Position] * len(df3.columns)
+
+      #df5 = pd.concat([df3, df4], axis=1)
+
+      if len(df3) >= 3:
+        stdev1 = df3["ratio"].rolling(3).std(ddof=1).iloc[-1]
+        average1 = df3["ratio"].rolling(3).mean().iloc[-1]
+        zz = (df3['ratio'].iloc[-1] - average1) / stdev1
+        
+        Position = 1
+
+        df4.loc[len(df4)] = [average1, stdev1, zz]
+        df5.loc[len(df5)] = [Position]
+        df6 = pd.concat([df3, df4 ,df5 ], axis=1)
+        
+
+
+
+        if (df6['zz'].iloc[-1] > bb1).all():
+          df6["Position"] = -1
+        elif (df6['zz'].iloc[-1] < bb1).all():
+          df6["Position"] = 1
+        else: 
+          df6["Position"].iloc[-1] = 0
+
+        Position = df6['Position'].iloc[-1]
+
+      else:
+        stdev1 = np.nan
+        average1 = np.nan
+        zz = np.nan
+        Position = np.nan
+      
+
+      pd.set_option('display.float_format', '{:.12f}'.format) #  haca le informamos cuantos decimales queremos que se muestren en la pantalla
+      print(f" HORA ACTUAL = {datetime.now()}")
+      print(f"ES = {TT}")
+      print(f"NQ = {TT1}")
+      print(f" RATIO = {ratio}")
+      print(f" STDEV = {stdev1}")
+      print(f" AVERAGE = {average1}")
+      print(f" ZZ = {zz}")
+      print(f" POSITION = {Position}")
+
+      ejecutado = True
+
+      time.sleep(10)
+
+      
+     
+
+
+def segundo1():
+    global ejecutado      # se trae la variable que esta fuera de la funcion
+    now = datetime.now()
+    if now.second == 00 :    
+        ejecutado = False
+        job()
+
+
+schedule.every(1).seconds.do(segundo1)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
