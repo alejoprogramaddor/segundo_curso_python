@@ -1,0 +1,163 @@
+#cracion de position 2 : y hacer una nueva tarea :
+ 
+ from ib_insync import *
+util.startLoop()
+
+import pandas as pd
+from datetime import datetime
+import numpy as numpy
+import numpy as np
+import schedule
+import os
+from statistics import mean
+from statistics import stdev
+from math import isnan
+from itertools import filterfalse
+from IPython.display import display
+from random import randint
+import time
+
+ib = IB()
+ib.connect('127.0.0.1', 7497, clientId=randint(0, 10000))
+
+contract = Future('ES', '20240621', 'CME')
+contract1 = Future('NQ', '20240621', 'CME')
+ib.qualifyContracts(contract)
+ib.qualifyContracts(contract1)
+ib.reqMarketDataType(1)
+
+ib.sleep(5)
+
+ticker = ib.reqTickByTickData(contract, "Last", 0, False)
+ticker1 = ib.reqTickByTickData(contract1, "Last", 0, False)
+
+ib.sleep(1)
+
+TT = ticker.last
+TT1 = ticker1.last
+ratio = (TT1/TT) * 0.6666666
+
+df3 = pd.DataFrame(columns=['tiempo','es', 'nq', 'ratio'])
+df4 = pd.DataFrame(columns=['average1', 'stdev1', 'zz'])
+df5 = pd.DataFrame(columns=['Position1'])
+df6 = pd.DataFrame(columns=['position2'])
+df7 = pd.concat([df3, df4, df5, df6], axis=1)    
+
+
+#esto es para que se agreguen los valores al dataframe
+df3.loc[len(df3)] = [datetime.now(), TT, TT1, ratio]              
+
+fib1 = 0.6666666
+bb1 = 0.5
+bb2 = -0.5
+print(ticker)
+print(ticker1)
+
+
+
+now = datetime.now()
+hour = datetime.now().hour
+minute = datetime.now().minute
+
+ejecutado = False      #esto es para que no se ejecute el codigo  cada minuto en el segundo 00
+
+
+def job():
+  global ejecutado
+  if not ejecutado:
+    ejecutado = False
+    global contract
+    global contract1
+    global ticker
+    global ticker1
+    global TT
+    global TT1
+    global ratio
+    global average1
+    global stdev1
+    global zz
+    global fib1
+    global bb1
+    global bb2
+    global now
+    global hour
+    global minute
+    global util
+    global randint
+    global Position
+    global tiempo
+    global df3
+    global df4
+    global df5
+    global df6
+    global df7
+    global Position1
+    global Position2
+
+    TT = ticker.last
+    TT1 = ticker1.last
+    ratio = (TT1/TT) * 0.6666666
+
+    df3.loc[len(df3)] = [datetime.now(), TT, TT1, ratio]
+
+    n = 3                          
+    series = df3['ratio']           #esto es para que se tome la columna ratio del dataframe
+    last3 = series.tail(n = n)      #esto es para que se tomen los ultimos 3 valores
+    average1 = last3.mean()         #esto es para que se calcule el promedio de los ultimos 3 valores
+
+
+    if len(df3) >= 3:
+      average1 = df3["ratio"].rolling(3).mean().iloc[-1]
+      stdev1 = df3["ratio"].rolling(3).std(ddof=1).iloc[-1]
+      zz = (df3['ratio'].iloc[-1] - average1) / stdev1
+     
+      if zz > bb1:               
+        Position1 = -1
+      elif zz < bb2:
+        Position1 = 1
+      else: 
+        Position1 = 0
+
+      #se crea el valor de position 2 :
+      if Position1 == 0 and len(df7) > 1:
+        position2 = df7['position2'].iloc[-1]
+      else:
+        position2 = Position1
+
+
+    else:
+      average1 = np.nan 
+      stdev1 = np.nan 
+      zz = np.nan 
+      Position1 = np.nan 
+      position2 = np.nan
+  
+    df7.loc[len(df7)] = [datetime.now(), TT, TT1, ratio, average1, stdev1, zz, Position1, position2] 
+
+    print(f" HORA ACTUAL = {datetime.now()}")
+    print(f"ES = {TT}")
+    print(f"NQ = {TT1}")
+    print(f"RATIO = {ratio}")
+    print(f"AVERAGE = {average1}")
+    print(f"STDEV = {stdev1}")                                 
+    print(f"ZZ = {zz}")
+    print(f"POSITION1 = {Position1}")   
+    
+
+    
+    print(display(df7))
+
+    
+def segundo1():
+  global ejecutado                                                     # se trae la variable que esta fuera de la funcion
+  now = datetime.now()                                                 #se trae la hora actual
+  if now.second == 00 or 15 or 30 or 45  :                                                #esto es para que se ejecute el codigo cada minuto
+      ejecutado = False                                                #esto es para que se ejecute el codigo cada minuto
+      job()                                                            #se llama a la funcion
+      ib.sleep(10)
+
+schedule.every(1).seconds.do(segundo1)                                 #esto es para que se ejecute el codigo cada segundo
+
+while True:
+  schedule.run_pending()
+  time.sleep(1)
