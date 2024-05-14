@@ -1,0 +1,61 @@
+from ib_insync import *
+util.startLoop()
+
+
+from datetime import datetime
+import datetime
+import numpy as numpy
+from statistics import mean
+from statistics import stdev
+from random import randint
+import pandas as pd
+
+
+
+ib = IB()
+ib.connect('127.0.0.1', 7497, clientId=randint(0, 10000))
+
+contract = Future('ES', '20240621', 'CME')
+contract1 = Future('NQ', '20240621', 'CME')
+
+ib.sleep(5)
+
+# endDateTime = ''
+
+# startDateTime = (datetime.datetime.now() - datetime.timedelta(days=15)).strftime("%Y%m%d %H:%M:%S")
+
+
+bars = ib.reqHistoricalData(
+    contract,
+    endDateTime = '20240511 17:00:00' ,
+    durationStr='10 D',  # Duración de 15 días
+    barSizeSetting='1 min',  # Frecuencia de los datos (cada minuto )
+    whatToShow='TRADES',
+    useRTH=False,
+    formatDate=1
+)
+
+bars1 = ib.reqHistoricalData(
+    contract1,
+    endDateTime = '20240511 17:00:00' ,
+    durationStr='10 D',  # Duración de 15 días
+    barSizeSetting='1 min',  # Frecuencia de los datos (cada minuto )
+    whatToShow='TRADES',
+    useRTH=False,
+    formatDate=110
+)
+
+pd.set_option('display.max_rows', None) #esto es para que se muestren todas las filas
+pd.set_option('display.max_columns', None) #esto es para que se muestren todas las columnas
+pd.set_option('max_colwidth', None) #muestra todo el contenido de cada celda
+
+df_ES = pd.DataFrame(bars)
+df_NQ = pd.DataFrame(bars1)
+
+df_ES.to_csv('datos_ES_endDateTime_11_mayo.csv',index=False)
+
+df_NQ.to_csv('datos_NQ_endDateTime_11_mayo.csv',index=False)
+
+ib.disconnect()
+
+
