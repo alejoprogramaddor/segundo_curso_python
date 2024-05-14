@@ -1,0 +1,77 @@
+from ib_insync import *
+from random import randint
+
+util.startLoop()
+
+ib = IB()
+ib.connect('127.0.0.1', 7497, clientId=randint(0, 10000))
+
+contract = Future('ES', '20240621', 'CME')
+contract1 = Future('NQ', '20240621', 'CME')
+
+
+ib.qualifyContracts(contract)
+ib.qualifyContracts(contract1)
+ib.reqMarketDataType(1)
+ib.sleep(3)
+
+ticker = ib.reqTickByTickData(contract, 'Last', 0, False)
+ticker1 = ib.reqTickByTickData(contract1, 'Last', 0, False)
+
+ib.sleep(2)
+
+
+# i changed last to close
+TT = ticker.last
+TT1 = ticker1.last
+
+print(TT)
+print(TT1)
+ib.sleep(3)
+ib.reqGlobalCancel()
+
+ib.sleep(1)
+
+posES = next((v.position for v in ib.positions() if v.contract.localSymbol == 'ESM4'), 0)
+posNQ = next((v.position for v in ib.positions() if v.contract.localSymbol == 'NQM4'), 0)
+
+x = abs(3 -(posES))
+y = abs(5 -(posNQ))
+
+action = LimitOrder(
+    action='BUY',
+    totalQuantity= 2 ,   
+    lmtPrice = TT - 5
+)
+
+order = ib.placeOrder(contract, order=action)
+
+action1 = LimitOrder(
+    action='SELL',
+    totalQuantity= 2 ,
+    lmtPrice = TT1 + 10
+)
+
+order1 = ib.placeOrder(contract1, order=action1)
+
+ib.sleep(3)
+
+print(order )
+print(order1)
+
+print(posES)
+
+print(posNQ)
+
+#ib.disconnect()
+
+ib.sleep(30)
+
+ib.reqGlobalCancel()
+
+ib.disconnect()
+
+
+
+#ib.orderStatus()
+
